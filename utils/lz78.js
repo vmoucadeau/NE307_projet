@@ -33,7 +33,7 @@ function to_dic(bin) {
 }
 
 function encode(text) {
-  const MAX_DICT_SIZE = 128;
+  const MAX_DICT_SIZE = 127;
   let dictionary = {};
   let encoded = [];
   let buffer = '';
@@ -53,7 +53,13 @@ function encode(text) {
     }
   }
   if (buffer) {
-    encoded.push([0, buffer]);
+    if(dictionary[buffer]) {
+      let index = dictionary[buffer] || 0;
+      encoded.push([index, '\0']);
+    }
+    else {
+      encoded.push([0, buffer]);
+    }
   }
   return encoded;
 }
