@@ -8,7 +8,7 @@ const showmenu_delay = 1000;
 const admin_key = "s3cr3t";
 const server_ip = [192,168,1,1];
 let server_process = null;
-let admin_ip = [192,168,1,0];
+let admin_ip = [0,0,0,0];
 let admin_hostname = "unknown";
 let client_list = [];
 let rl = readline.createInterface({
@@ -37,7 +37,7 @@ function spawn_server() {
                         case "SET_IP":
                             admin_ip = parsed.content.split('.').map(x => parseInt(x));
                             immon.set_src_info(admin_ip, admin_hostname, 3000);
-                            console.log(`Admin IP set to ${admin_ip.join('.')}`);
+                            console.log(`\nAdmin IP set to ${admin_ip.join('.')}`);
                             break;
                         case "SET_HOSTNAME":
                             admin_hostname = parsed.content;
@@ -57,7 +57,6 @@ function spawn_server() {
         });
     
         client.on('open', function(ws) {
-            console.log('\nConnected to server');
             immon.set_src_info(admin_ip, "admin", 3000);
             immon.set_ws(client);
             immon.admin_send_message(server_ip, "HEY", admin_key);

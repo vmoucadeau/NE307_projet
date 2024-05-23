@@ -1,12 +1,8 @@
 const ws = require('ws');
-const frame = require('./utils/frames.js');
-const Buffutils = require('./utils/buffers.js');
-const lz78 = require('./utils/lz78.js');
-const etcp = require('./protocols/etcp.js'); // eTCP protocol is used for this client
-
+const immon = require('./protocols/immon.js');
 
 let client = new ws.WebSocket('ws://localhost:8080/');
-let client_ip = [192,168,1,0]; // default value (should be changed by the server)
+let client_ip = [0,0,0,0]; // default value (should be changed by the server)
 let server_ip = [192,168,1,1];
 let client_hostname = "unknown" // default value (should be changed by the server)
 
@@ -18,18 +14,36 @@ client.on('error', function(error) {
 let received = null;
 
 
-client.on('open', async function(connection) {
-    // let data = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Quisque non dui eros. Cras ac nisl et massa blandit cursus a id dolor. Fusce aliquet nec odio ac suscipit. Nullam et egestas turpis. Quisque a arcu ut purus ornare eleifend. Nulla facilisi. Donec efficitur, erat eget fermentum ornare, ligula velit elementum ipsum, ac auctor nulla odio vel libero. Aliquam dolor ante, pellentesque ut consectetur et, gravida eu neque. Duis vitae aliquam diam. Aenean eget convallis sem, vel suscipit eros. Nam aliquam volutpat varius. Vestibulum sit amet purus imperdiet, vulputate lorem et, tempus sapien. Curabitur at lacinia diam. Vivamus ac neque sem. Ma.";
-    let data = "IMMON_CLI:HELLO:world:coucou";
-    etcp.set_ws_client(client);
-    await etcp.send_message({
-        dest_ip: server_ip,
-        src_ip: client_ip,
-        src_hostname: client_hostname,
-        protocol: 1,
-        dest_port: 8080,
-        src_port: 8080
-    }, data);
-    
-    process.exit();
+client.on('message', async function(buffer) {
+    let parsed = await immon.handle_buffer(buffer);
+    if(parsed == null) return;
+    switch(parsed.origin) {
+        case "IMMON_SRV":
+            switch(parsed.type) {
+                case "SET_IP":
+                    client_ip = parsed.content.split('.').map(x => parseInt(x));
+                    immon.set_src_info(client_ip, client_hostname, 4000);
+                    console.log(`Client IP set to ${client_ip.join('.')}`);
+                    break;
+                case "SET_HOSTNAME":
+                    client_hostname = parsed.content;
+                    immon.set_src_info(client_ip, client_hostname, 4000);
+                    console.log(`Client hostname set to ${parsed.content}`);
+                    break;
+                case "ERROR":
+                    console.log(`Error: ${parsed.content}`);
+                    break;
+            }
+            break;
+        case "IMMON_CLI":
+            console.log(`Client message received: ${parsed.content}`);
+        case "IMMON_ADMIN":
+            console.log(`Admin can't send messages to clients`);
+    }
+});
+
+client.on('open', async function(ws) {
+    immon.set_src_info(client_ip, client_hostname, 3000);
+    immon.set_ws(client);
+    await immon.cli_send_message(server_ip, "HEY", "");
 });

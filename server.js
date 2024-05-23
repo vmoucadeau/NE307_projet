@@ -10,6 +10,7 @@ let admin_ip = [192,168,1,2];
 let broadcast_ip = [255,255,255,255];
 let hostname = "immon-server";
 const admin_key = "s3cr3t";
+let admin_connected = false;
 
 let client_list = []; // {ip: [192,168,1,2], hostname: "13char", open: false, ws: null}
 
@@ -57,6 +58,7 @@ wss.on('connection', (ws) => {
                         if(immon_parsed.content == admin_key) {
                             await immon.srv_send_message(admin_ip, "SET_IP", admin_ip.join(".")); // send the admin ip to the admin
                             await immon.srv_send_message(admin_ip, "SET_HOSTNAME", "immon-admin"); // send the hostname to the admin
+                            admin_connected = true;
                         }
                         else {
                             await immon.srv_send_message(admin_ip, "ERROR", "Invalid key");
@@ -71,8 +73,8 @@ wss.on('connection', (ws) => {
                 switch(immon_parsed.type) {
                     case "HEY":
                         let index = search_client(ws);
-                        client_list[client_id].ip = immon_parsed.src_ip;
-                        await immon.cli_send_message(immon_parsed.src_ip, "HEY", "world", admin_ip);
+                        client_list[client_id].ip = [192,168,1, client_list.length + 1];
+                        await immon.srv_send_message(client_list[client_id].ip, "SET_IP", client_list[client_id].ip.join("."));
                         break;
                 }
                 break;

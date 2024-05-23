@@ -19,10 +19,6 @@ const head = {
 let received = "";
 let ack = 0;
 
-async function send_ack(ack_num, dest_ip) {
-    head.dest_ip = dest_ip;
-    await etcp.send_ack(head, ack_num);
-}
 
 async function cli_send_message(dest_ip, type, content) {
     head.dest_ip = dest_ip;
@@ -60,10 +56,16 @@ async function handle_buffer(buffer) {
         return ack;
     }
     if(head.flags == 2) {
+        await etcp.send_end(head, ack);
         let decoded = lz78.decode(lz78.to_dic(received));
         received = "";
         ack = 0;
         return parse_message(decoded);
+    }
+    if(head.flags == 3) {
+        received = "";
+        ack = 0;
+        return 0;
     }
 }
 
@@ -81,4 +83,4 @@ function set_ws(client) {
     etcp.set_ws_client(client);
 }
 
-module.exports = {send_ack, cli_send_message, admin_send_message, srv_send_message, handle_buffer, set_src_info, set_dest_port, set_ws}
+module.exports = {cli_send_message, admin_send_message, srv_send_message, handle_buffer, set_src_info, set_dest_port, set_ws}

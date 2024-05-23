@@ -14,7 +14,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function generate_ack(head, ack_num) {
+function generate_ack(head, ack_num, end = false) {
     let frame_head = {
         dest_ip: head.dest_ip,
         src_ip: head.src_ip,
@@ -24,7 +24,7 @@ function generate_ack(head, ack_num) {
         src_port: Bufferutils.int16buffer(head.src_port),
         seq_num: Bufferutils.int32buffer(head.seq_num),
         ack_num: Bufferutils.int32buffer(ack_num),
-        flags: 1 // last frame
+        flags: Bufferutils.int8buffer(end ? 3 : 1) // end transmission
     }
     return frame.generate("", frame_head);
 }
@@ -57,7 +57,7 @@ async function send(frames) {
     for(i = 0; i < frames.length; i++) {
         ws_client.send(frames[i]);
         let actual_delay = 0;
-        while(received == null && actual_delay < sleep_time*100) {
+        while(received == null && actual_delay < sleep_time*1000) {
             await sleep(sleep_time);
             actual_delay += sleep_time;
         }
@@ -67,15 +67,19 @@ async function send(frames) {
 }
 
 async function send_message(head, message) {
-    console.log(head);
     let frames = generate_frames(message, head);
     await send(frames);
 }
 
-async function send_ack(head, ack_num) {
+function send_ack(head, ack_num) {
     let ack = generate_ack(head, ack_num);
     ws_client.send(ack);
 } 
+
+function send_end(head, ack_num) {
+    let end = generate_ack(head, ack_num, true);
+    ws_client.send(end);
+}
 
 function set_ws_client(client) {
     ws_client = client;
@@ -90,4 +94,4 @@ function set_sleep_time(time) {
     sleep_time = time;
 }
 
-module.exports = {send_ack, set_ws_client, send_message, set_sleep_time}
+module.exports = {send_ack, send_end, set_ws_client, send_message, set_sleep_time}
