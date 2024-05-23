@@ -24,14 +24,19 @@ async function send_ack(ack_num, dest_ip) {
     await etcp.send_ack(head, ack_num);
 }
 
-async function cli_send_message(head, type, content, dest_ip) {
+async function cli_send_message(dest_ip, type, content) {
     head.dest_ip = dest_ip;
     await etcp.send_message(head, "IMMON_CLI:" + type + ":" + content);
 }
 
-async function admin_send_message(head, type, content, dest_ip) {
+async function admin_send_message(dest_ip, type, content) {
     head.dest_ip = dest_ip;
     await etcp.send_message(head, "IMMON_ADMIN:" + type + ":" + content);
+}
+
+async function srv_send_message(dest_ip, type, content) {
+    head.dest_ip = dest_ip;
+    await etcp.send_message(head, "IMMON_SRV:" + type + ":" + content);
 }
 
 async function parse_message(message) {
@@ -76,4 +81,4 @@ function set_ws(client) {
     etcp.set_ws_client(client);
 }
 
-module.exports = {send_ack, cli_send_message, admin_send_message, handle_buffer, set_src_info, set_dest_port, set_ws}
+module.exports = {send_ack, cli_send_message, admin_send_message, srv_send_message, handle_buffer, set_src_info, set_dest_port, set_ws}

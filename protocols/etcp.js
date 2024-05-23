@@ -6,6 +6,7 @@ const frame = require('../utils/frames.js');
 const lz78 = require('../utils/lz78.js');
 const Bufferutils = require('../utils/buffers.js');
 const protocol_code = 1;
+let sleep_time = 10;
 let ws_client = null;
 let received = null;
 
@@ -55,8 +56,10 @@ async function send(frames) {
     if(ws_client == null) return -1;
     for(i = 0; i < frames.length; i++) {
         ws_client.send(frames[i]);
-        while(received == null) {
-            await sleep(10);
+        let actual_delay = 0;
+        while(received == null && actual_delay < sleep_time*100) {
+            await sleep(sleep_time);
+            actual_delay += sleep_time;
         }
         received = null;
     }
@@ -64,13 +67,14 @@ async function send(frames) {
 }
 
 async function send_message(head, message) {
+    console.log(head);
     let frames = generate_frames(message, head);
     await send(frames);
 }
 
 async function send_ack(head, ack_num) {
     let ack = generate_ack(head, ack_num);
-    await send([ack]);
+    ws_client.send(ack);
 } 
 
 function set_ws_client(client) {
@@ -82,4 +86,8 @@ function set_ws_client(client) {
     }
 }
 
-module.exports = {send_ack, set_ws_client, send_message}
+function set_sleep_time(time) {
+    sleep_time = time;
+}
+
+module.exports = {send_ack, set_ws_client, send_message, set_sleep_time}
