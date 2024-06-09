@@ -1,5 +1,14 @@
 /*
-    eTCP ASCII art logo
+            ________  ______   _______  
+            /        |/      \ /       \ 
+    ______$$$$$$$$//$$$$$$  |$$$$$$$  |
+    /      \  $$ |  $$ |  $$/ $$ |__$$ |
+    /$$$$$$  | $$ |  $$ |      $$    $$/ 
+    $$    $$ | $$ |  $$ |   __ $$$$$$$/  
+    $$$$$$$$/  $$ |  $$ \__/  |$$ |      
+    $$       | $$ |  $$    $$/ $$ |      
+    $$$$$$$/  $$/    $$$$$$/  $$/       
+                                        
     This protocol is eTCP (for eco+ TCP). It's like TCP but with minimal features. It's used for the IMMON project.
 */
 const frame = require('../utils/frames.js');
@@ -32,7 +41,7 @@ function generate_ack(head, ack_num, end = false) {
 function generate_frames(data, head) {
     let frames = [];
     data = lz78.to_bin(lz78.encode(data)); // data is now a binary string
-    // let test = ""
+    // Data length divided by 986 (max data length)
     for(let i = 0; i < data.length/986; i++) {
         let frame_head = {
             dest_ip: head.dest_ip,

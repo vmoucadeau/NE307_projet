@@ -1,5 +1,5 @@
 /*
-    IMMON Protocol
+    IMMON Application Protocol
     Built on top of eTCP
 */
 

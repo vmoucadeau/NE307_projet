@@ -2,15 +2,18 @@ const ws = require('ws');
 const immon = require('./protocols/immon.js');
 const child_process = require('child_process');
 const readline = require('readline');
+var colors = require('colors');
 
 //var client = new ws.WebSocket('ws://localhost:8080/');
 const showmenu_delay = 1000;
 const admin_key = "s3cr3t";
 const server_ip = [192,168,1,1];
 let server_process = null;
+let server_connected = false;
 let admin_ip = [0,0,0,0];
 let admin_hostname = "unknown";
-let client_list = [];
+let clients_list = [];
+let clients_process = [];
 let rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -37,12 +40,17 @@ function spawn_server() {
                         case "SET_IP":
                             admin_ip = parsed.content.split('.').map(x => parseInt(x));
                             immon.set_src_info(admin_ip, admin_hostname, 3000);
-                            console.log(`\nAdmin IP set to ${admin_ip.join('.')}`);
+                            server_connected = true;
+                            // console.log(`\nAdmin IP set to ${admin_ip.join('.')}`);
                             break;
                         case "SET_HOSTNAME":
                             admin_hostname = parsed.content;
                             immon.set_src_info(admin_ip, admin_hostname, 3000);
-                            console.log(`Admin hostname set to ${parsed.content}`);
+                            server_connected = true;
+                            // console.log(`Admin hostname set to ${parsed.content}`);
+                            break;
+                        case "CLIENTS_LIST":
+                            clients_list = JSON.parse(parsed.content);
                             break;
                         case "ERROR":
                             console.log(`Error: ${parsed.content}`);
@@ -50,9 +58,9 @@ function spawn_server() {
                     }
                     break;
                 case "IMMON_CLI":
-                    console.log(`Client can't send messages to the admin`);
+                    console.log(`Client can't send messages to the admin`.yellow);
                 case "IMMON_ADMIN":
-                    console.log(`Admin can't send messages to the admin`);
+                    console.log(`Admin can't send messages to the admin`.yellow);
             }
         });
     
@@ -60,7 +68,7 @@ function spawn_server() {
             immon.set_src_info(admin_ip, "admin", 3000);
             immon.set_ws(client);
             immon.admin_send_message(server_ip, "HEY", admin_key);
-            // setTimeout(display_menu, showmenu_delay);
+            setTimeout(display_menu, showmenu_delay);
         });
         
 
@@ -70,7 +78,7 @@ function spawn_server() {
     server.on('close', (code) => {
         client.close();
         console.log(`\nServer process exited with code ${code}`);
-        server_process = null;
+        server_connected = false;
         setTimeout(display_menu, showmenu_delay);
     });
     return server;
@@ -81,7 +89,7 @@ function spawn_server() {
 
 
 function spawn_client() {
-    if(server_process == null) {
+    if(server_connected == false) {
         console.log('Server is not running');
         return;
     }
@@ -90,27 +98,53 @@ function spawn_client() {
     client.on('close', (code) => {
         // Get the client id
         let id = -1;
-        for(let i = 0; i < client_list.length; i++) {
-            if(client_list[i].process == client) {
-                id = client_list[i].id;
+        for(let i = 0; i < clients_process.length; i++) {
+            if(clients_process[i].process == client) {
+                id = clients_process[i].id;
                 break;
             }
         }
         console.log(`\nClient ${id} exited with code ${code}`);
         // Remove the client from the list
-        for(let i = 0; i < client_list.length; i++) {
-            if(client_list[i].process == client) {
-                client_list.splice(i, 1);
+        for(let i = 0; i < clients_process.length; i++) {
+            if(clients_process[i].process == client) {
+                clients_process.splice(i, 1);
                 break;
             }
         }
         setTimeout(display_menu, showmenu_delay);
     });
-    client_list.push({
+    clients_process.push({
         process: client,
-        id: client_list.length
+        id: clients_process.length
     }); 
 
+}
+
+function choice_client_hostname() {
+    console.clear();
+    console.log("List of connected clients :".yellow);
+    for(let i = 0; i < clients_list.length; i++) {
+        console.log(" - " + `Client ${i}`.cyan + " : " + clients_list[i].hostname + " - " + clients_list[i].ip);
+    }
+    rl.question("Please enter the hostname for the new client (must be unique, max 13 characters : a-z,0-9,-) : ", (answer) => {
+        let patern = /^[a-z0-9-]{1,13}$/;
+        if(!patern.test(answer)) {
+            console.log("Invalid hostname format.".red);
+            setTimeout(choice_client_hostname, showmenu_delay);
+            return;
+        }
+        for(let i = 0; i < clients_list.length; i++) {
+            if(clients_list[i].hostname == answer) {
+                console.log("Hostname already used".red);
+                setTimeout(choice_client_hostname, showmenu_delay);
+                return;
+            }
+        }
+        immon.admin_send_message(server_ip, "NEW_CLI", answer);
+        setTimeout(spawn_client, showmenu_delay);
+        setTimeout(display_menu, showmenu_delay);
+    });
 }
 
 function display_menu() {
@@ -127,9 +161,11 @@ function display_menu() {
     console.log("");
     console.log("Welcome to the IMMON Admin Console");
     console.log("===================================");
+    console.log("Admin IP: ".blue + admin_ip.join('.') + "\nAdmin Hostname: ".blue + admin_hostname);
+    console.log("Server status : " + (server_connected == false ? "OFF".red : "ON".green));
     console.log("");
     console.log("Please select an option:");
-    if(server_process == null) {                                                                                      
+    if(server_connected == false) {                                                                                      
         console.log('1. Start server');
     }
     else {
@@ -141,18 +177,20 @@ function display_menu() {
     rl.question('Enter your choice: ', (answer) => {
         switch(answer) {
             case '1':
-                if(server_process == null) {
+                if(server_connected == false) {
                     server_process = spawn_server();
                 }
                 else {
                     console.log('Server already running');
                 }
+                setTimeout(display_menu, showmenu_delay);
                 break;
             case '2':
-                spawn_client();
+                choice_client_hostname();
                 break;
             case '3':
                 console.log('Deleting a client');
+                setTimeout(display_menu, showmenu_delay);
                 break;
             case '4':
                 console.log('Exiting');
@@ -160,9 +198,10 @@ function display_menu() {
                 break;
             default:
                 console.log('Invalid choice');
+                setTimeout(display_menu, showmenu_delay);
                 break;
         }
-        setTimeout(display_menu, showmenu_delay);
+        
     });
 }
 

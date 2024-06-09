@@ -11,7 +11,7 @@
         ack_num: 0-4294967295,
         flags: 0 (NONE), 1 (ACK), 2 (FIN) (one byte)
     }
-    Head data length: 35 bytes (layers 1 and 2)
+    Head data length: 35 bytes (layers 1 and 2) + 3 bytes (padding) = 38 bytes
     {
         dest_ip: 4 bytes,
         src_ip: 4 bytes,
@@ -24,6 +24,7 @@
         flags: 1 byte,
         offset: 3 bytes
     }
+    Data length: 1024 - 38 = 986 bytes
 */
 
 const head_lengths = {

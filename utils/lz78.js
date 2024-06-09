@@ -11,6 +11,22 @@ function gen_parity(bin) {
   return out;
 }
 
+function check_parity(bin) {
+  let out = '';
+  for(let i = 0; i < bin.length; i+=8) {
+    let byte = bin.slice(i+1, i+8);
+    let parity = 0;
+    for(let j = 0; j < byte.length; j++) {
+      parity ^= parseInt(byte[j]);
+    }
+    if(parity == parseInt(bin[i])) {
+      out += byte;
+    }
+  }
+  return out;
+
+}
+
 function to_bin(lz78) {
   let bin = '';
   for (let i = 0; i < lz78.length; i++) {

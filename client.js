@@ -5,7 +5,7 @@ let client = new ws.WebSocket('ws://localhost:8080/');
 let client_ip = [0,0,0,0]; // default value (should be changed by the server)
 let server_ip = [192,168,1,1];
 let client_hostname = "unknown" // default value (should be changed by the server)
-
+let clients_list = [];
 
 client.on('error', function(error) {
     console.log('Connect Error: ' + error.toString());
@@ -32,6 +32,14 @@ client.on('message', async function(buffer) {
                     break;
                 case "ERROR":
                     console.log(`Error: ${parsed.content}`);
+                    break;
+                case "CLIENTS_LIST":
+                    clients_list = JSON.parse(parsed.content);
+                    console.log(`Clients list: ${clients_list}`);
+                    break;
+                case 'KEEP_ALIVE':
+                    console.log('Keepalive received');
+                    await immon.cli_send_message(server_ip, "ALIVE", "");
                     break;
             }
             break;
