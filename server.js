@@ -120,7 +120,7 @@ wss.on('connection', (ws) => {
                         // Forward the message to the destination client
                         process.stdout.write(clients_list[client_id].hostname + " : ");
                         console.log(immon_parsed);
-                        
+
                         let dest_ip = Array.from(head.dest_ip);
                         let dest_id = search_client(null, dest_ip);
                         if(dest_id == -1) {
@@ -162,7 +162,7 @@ cron.schedule('*/5 * * * * *', async() => {
         // console.log(clients_list.map(item => {return {hostname: item.hostname, time: item.lastkeepalive, open: item.open}})); DEBUG
         // Check if the clients are still alive
         for(let i = 0; i < clients_list.length; i++) {
-            if(Date.now() - clients_list[i].lastkeepalive > 3000) {
+            if(Date.now() - clients_list[i].lastkeepalive > 10000) {
                 console.log(`Client ${i} disconnected`);
                 if(clients_list[i].ip == admin_ip) {
                     admin_connected = false;

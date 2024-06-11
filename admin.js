@@ -65,8 +65,10 @@ function spawn_server() {
                     break;
                 case "IMMON_CLI":
                     console.log(`Client can't send messages to the admin`.yellow);
+                    break;
                 case "IMMON_ADMIN":
                     console.log(`Admin can't send messages to the admin`.yellow);
+                    break;
             }
         });
     

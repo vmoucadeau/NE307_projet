@@ -11,4 +11,4 @@
 Pour utiliser le programme, il faut utiliser la commande ```node admin.js``` et se laisser guider par le menu
 
 ### Notes
-L'envoi de message ne fonctionne qu'avec des caractères ASCII
+- Il y a un petit bug d'envoi de message avec les caractères non ASCII pour le moment

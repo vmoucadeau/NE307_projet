@@ -57,10 +57,10 @@ client.on('message', async function(buffer) {
         case "IMMON_CLI":
             switch(parsed.type) {
                 case "MESSAGE":
-                    console.log(head);
+                    // console.log(head);
                     var str_src_hostname = new TextDecoder().decode(head.src_hostname);
                     var str_src_ip = Array.from(head.src_ip).join('.');
-                    console.log(`Message from ` + `${str_src_hostname} `.cyan + `(${str_src_ip})`.red + ` : ${parsed.content}`);
+                    console.log(`Message from ` + `${str_src_hostname} `.cyan + `(${str_src_ip})`.green + ` : ${parsed.content}`);
                     break;
             }
             break;
@@ -89,6 +89,11 @@ function displayInterface() {
         let client = clients_list.find(x => x.hostname == hostname);
         if(client == undefined) {
             console.log("Client not found".red);
+            displayInterface();
+            return;
+        }
+        if(client.hostname == "immon-admin") {
+            console.log("You can't send messages to the admin".red);
             displayInterface();
             return;
         }
