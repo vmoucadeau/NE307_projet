@@ -51,6 +51,12 @@ function spawn_server() {
                             break;
                         case "CLIENTS_LIST":
                             clients_list = JSON.parse(parsed.content);
+                            display_menu();
+                            break;
+                        case 'KEEP_ALIVE':
+                            setTimeout(async() => {
+                                await immon.admin_send_message(server_ip, "ALIVE", "");
+                            }, 100); // wait for the server to be ready to receive the message
                             break;
                         case "ERROR":
                             console.log(`Error: ${parsed.content}`);
@@ -64,10 +70,10 @@ function spawn_server() {
             }
         });
     
-        client.on('open', function(ws) {
+        client.on('open', async function(ws) {
             immon.set_src_info(admin_ip, "admin", 3000);
             immon.set_ws(client);
-            immon.admin_send_message(server_ip, "HEY", admin_key);
+            await immon.admin_send_message(server_ip, "HEY", admin_key);
             setTimeout(display_menu, showmenu_delay);
         });
         
@@ -77,9 +83,11 @@ function spawn_server() {
 
     server.on('close', (code) => {
         client.close();
-        console.log(`\nServer process exited with code ${code}`);
         server_connected = false;
-        setTimeout(display_menu, showmenu_delay);
+        clients_list = [];
+        admin_ip = [0,0,0,0];
+        admin_hostname = "unknown";
+        display_menu();
     });
     return server;
 }
@@ -104,7 +112,6 @@ function spawn_client() {
                 break;
             }
         }
-        console.log(`\nClient ${id} exited with code ${code}`);
         // Remove the client from the list
         for(let i = 0; i < clients_process.length; i++) {
             if(clients_process[i].process == client) {
@@ -127,7 +134,7 @@ function choice_client_hostname() {
     for(let i = 0; i < clients_list.length; i++) {
         console.log(" - " + `Client ${i}`.cyan + " : " + clients_list[i].hostname + " - " + clients_list[i].ip);
     }
-    rl.question("Please enter the hostname for the new client (must be unique, max 13 characters : a-z,0-9,-) : ", (answer) => {
+    rl.question("Please enter the hostname for the new client (must be unique, max 13 characters : a-z,0-9,-) : ", async(answer) => {
         let patern = /^[a-z0-9-]{1,13}$/;
         if(!patern.test(answer)) {
             console.log("Invalid hostname format.".red);
@@ -141,7 +148,25 @@ function choice_client_hostname() {
                 return;
             }
         }
-        immon.admin_send_message(server_ip, "NEW_CLI", answer);
+        await immon.admin_send_message(server_ip, "NEW_CLI", answer);
+        setTimeout(spawn_client, showmenu_delay);
+        setTimeout(display_menu, showmenu_delay);
+    });
+}
+
+function choice_client_delete() {
+    console.clear();
+    console.log("List of connected clients :".yellow);
+    for(let i = 0; i < clients_list.length; i++) {
+        console.log(" - " + `Client ${i}`.cyan + " : " + clients_list[i].hostname + " - " + clients_list[i].ip);
+    }
+    rl.question(`Choose the client to remove (1-${clients_list.length-1}) : `, async(answer) => {
+        if(isNaN(answer) || parseInt(answer) < 1 || parseInt(answer) >= clients_list.length) {
+            console.log("Invalid choice".red);
+            setTimeout(choice_client_delete, showmenu_delay);
+            return;
+        }
+        await immon.admin_send_message(server_ip, "NEW_CLI", answer);
         setTimeout(spawn_client, showmenu_delay);
         setTimeout(display_menu, showmenu_delay);
     });
@@ -163,6 +188,16 @@ function display_menu() {
     console.log("===================================");
     console.log("Admin IP: ".blue + admin_ip.join('.') + "\nAdmin Hostname: ".blue + admin_hostname);
     console.log("Server status : " + (server_connected == false ? "OFF".red : "ON".green));
+    console.log("");
+    if(clients_list.length == 0) {
+        console.log("No clients connected".yellow);
+    }
+    else {
+        console.log("List of connected clients :".yellow);
+        for(let i = 0; i < clients_list.length; i++) {
+            console.log(" - " + `Client ${i}`.cyan + " : " + clients_list[i].hostname + " - " + clients_list[i].ip);
+        }
+    }
     console.log("");
     console.log("Please select an option:");
     if(server_connected == false) {                                                                                      

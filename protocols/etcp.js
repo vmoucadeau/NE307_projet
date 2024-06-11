@@ -90,12 +90,15 @@ function send_end(head, ack_num) {
     ws_client.send(end);
 }
 
+function on_message(data) {
+    received = data;
+}
+
 function set_ws_client(client) {
+    if(ws_client != null) ws_client.removeListener('message', on_message); // remove the previous listener
     ws_client = client;
     if(ws_client != null) {
-        ws_client.on('message', function message(data) {
-            received = data;
-        });
+        ws_client.on('message', on_message);
     }
 }
 

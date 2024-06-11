@@ -35,14 +35,14 @@ async function srv_send_message(dest_ip, type, content) {
     await etcp.send_message(head, "IMMON_SRV:" + type + ":" + content);
 }
 
-async function parse_message(message) {
+async function parse_message(message,head) {
     let split = message.split(":");
     if(split.length < 3) return null;
     let origin = split[0];
     let type = split[1];
     split = split.slice(2);
     let content = split.join(":").replaceAll('\x00', "");
-    return {origin, type, content};
+    return {head, origin, type, content};
 }
 
 async function handle_buffer(buffer) {
@@ -60,7 +60,7 @@ async function handle_buffer(buffer) {
         let decoded = lz78.decode(lz78.to_dic(received));
         received = "";
         ack = 0;
-        return parse_message(decoded);
+        return parse_message(decoded,head);
     }
     if(head.flags == 3) {
         received = "";
