@@ -12,3 +12,4 @@ Pour utiliser le programme, il faut utiliser la commande ```node admin.js``` et 
 
 ### Notes
 - Il y a un petit bug d'envoi de message avec les caractères non ASCII pour le moment
+- L'action suppresion de client ne fonctionne pas encore avec l'admin
