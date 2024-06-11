@@ -26,7 +26,8 @@ immon.set_src_info(admin_ip, admin_hostname, 3000);
 
 function spawn_server() {
     console.log('Starting IMMON server');
-    const server = child_process.exec('start cmd.exe /K node server.js');
+    let command = process.platform === 'win32' ? 'start cmd.exe /K node server.js' : 'gnome-terminal -- node server.js';
+    const server = child_process.exec(command);
 
     setTimeout(() => {
         client = new ws.WebSocket('ws://localhost:8080/');
@@ -83,14 +84,14 @@ function spawn_server() {
     }, 2000);
 
 
-    server.on('close', (code) => {
-        client.close();
-        server_connected = false;
-        clients_list = [];
-        admin_ip = [0,0,0,0];
-        admin_hostname = "unknown";
-        display_menu();
-    });
+    // server.on('close', (code) => {
+    //     client.close();
+    //     server_connected = false;
+    //     clients_list = [];
+    //     admin_ip = [0,0,0,0];
+    //     admin_hostname = "unknown";
+    //     display_menu();
+    // });
     return server;
 }
 
@@ -104,30 +105,8 @@ function spawn_client() {
         return;
     }
     console.log('Creating IMMON client');
-    const client = child_process.exec('start cmd.exe /K node client.js');
-    client.on('close', (code) => {
-        // Get the client id
-        let id = -1;
-        for(let i = 0; i < clients_process.length; i++) {
-            if(clients_process[i].process == client) {
-                id = clients_process[i].id;
-                break;
-            }
-        }
-        // Remove the client from the list
-        for(let i = 0; i < clients_process.length; i++) {
-            if(clients_process[i].process == client) {
-                clients_process.splice(i, 1);
-                break;
-            }
-        }
-        setTimeout(display_menu, showmenu_delay);
-    });
-    clients_process.push({
-        process: client,
-        id: clients_process.length
-    }); 
-
+    let command = process.platform === 'win32' ? 'start cmd.exe /K node client.js' : 'gnome-terminal -- node client.js';
+    const client = child_process.exec(command);
 }
 
 function choice_client_hostname() {
@@ -165,11 +144,11 @@ function choice_client_delete() {
     rl.question(`Choose the client to remove (1-${clients_list.length-1}) : `, async(answer) => {
         if(isNaN(answer) || parseInt(answer) < 1 || parseInt(answer) >= clients_list.length) {
             console.log("Invalid choice".red);
-            setTimeout(choice_client_delete, showmenu_delay);
+            setTimeout(display_menu, showmenu_delay);
             return;
         }
-        await immon.admin_send_message(server_ip, "NEW_CLI", answer);
-        setTimeout(spawn_client, showmenu_delay);
+        await immon.admin_send_message(server_ip, "REM_CLI", clients_list[parseInt(answer)].hostname);
+        console.log("Removing client...".yellow);
         setTimeout(display_menu, showmenu_delay);
     });
 }
@@ -226,8 +205,7 @@ function display_menu() {
                 choice_client_hostname();
                 break;
             case '3':
-                console.log('Deleting a client');
-                setTimeout(display_menu, showmenu_delay);
+                choice_client_delete();
                 break;
             case '4':
                 console.log('Exiting');

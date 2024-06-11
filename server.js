@@ -86,6 +86,21 @@ wss.on('connection', (ws) => {
                         console.log(immon_parsed);
                         next_client_hostname = immon_parsed.content;
                         break;
+                    case "REM_CLI":
+                        process.stdout.write(clients_list[client_id].hostname + " : ");
+                        console.log(immon_parsed);
+                        let rm_id = search_client(null, null, immon_parsed.content);
+                        if(rm_id == -1) {
+                            await immon.srv_send_message(admin_ip, "ERROR", "Client not found");
+                            break;
+                        }
+                        clients_list.splice(rm_id, 1);
+                        immon.set_ws(clients_list[rm_id].ws);
+                        clients_list[rm_id].open = true;
+                        await immon.srv_send_message(clients_list[rm_id].ip, "REMOVE", "");
+                        clients_list[rm_id].open = false;
+                        await broadcast_message("CLIENTS_LIST", JSON.stringify(clients_list.map(item => {return {ip: item.ip.join("."), hostname: item.hostname}})));
+                        break;
                     case "ALIVE":
                         process.stdout.write(clients_list[client_id].hostname + " : ");
                         console.log(immon_parsed);
@@ -148,7 +163,6 @@ wss.on('connection', (ws) => {
 async function broadcast_keepalive() {
     // Send a KEEP_ALIVE message to all clients
     for(let i = 0; i < clients_list.length; i++) {
-        if(clients_list[i].open) continue; // if the client is already open, doesn't need to be checked
         immon.set_ws(clients_list[i].ws);
         clients_list[i].open = true;
         await immon.srv_send_message(clients_list[i].ip, "KEEP_ALIVE", "");
@@ -162,7 +176,7 @@ cron.schedule('*/5 * * * * *', async() => {
         // console.log(clients_list.map(item => {return {hostname: item.hostname, time: item.lastkeepalive, open: item.open}})); DEBUG
         // Check if the clients are still alive
         for(let i = 0; i < clients_list.length; i++) {
-            if(Date.now() - clients_list[i].lastkeepalive > 10000) {
+            if(Date.now() - clients_list[i].lastkeepalive > 6000) {
                 console.log(`Client ${i} disconnected`);
                 if(clients_list[i].ip == admin_ip) {
                     admin_connected = false;

@@ -52,6 +52,12 @@ client.on('message', async function(buffer) {
                         await immon.cli_send_message(server_ip, "ALIVE", "");
                     }, 100);
                     break;
+                case "REMOVE":
+                    console.log("You have been removed from the server".red);
+                    setTimeout(() => {
+                        process.exit(0);
+                    }, 1000);
+                    break;
             }
             break;
         case "IMMON_CLI":
