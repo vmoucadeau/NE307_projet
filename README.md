@@ -1,4 +1,7 @@
 # Projet NE307
+Auteur : Vincent MOUCADEAU
+Last edit : 16-06-2024
+
 ### Requis
 - Avoir NodeJS d'installé (https://nodejs.org/en/download/prebuilt-installer/current)
 - ~~Utiliser une machine sous Windows~~  : L'application est maintenant compatible avec l'invité de commande Windows ainsi qu'avec gnome-terminal sur Linux (il suffit d'avoir l'interface graphique Gnome, présente sur Fedora et Ubuntu par exemple)
