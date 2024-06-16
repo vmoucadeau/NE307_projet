@@ -80,17 +80,24 @@ function spawn_server() {
             setTimeout(display_menu, showmenu_delay);
         });
         
-
+        
+        client.on('close', async function(ws) {
+            server_connected = false;
+            clients_list = [];
+            admin_ip = [0,0,0,0];
+            admin_hostname = "unknown";
+            display_menu();
+        });
     }, 2000);
 
 
     // server.on('close', (code) => {
     //     client.close();
-    //     server_connected = false;
-    //     clients_list = [];
-    //     admin_ip = [0,0,0,0];
-    //     admin_hostname = "unknown";
-    //     display_menu();
+        // server_connected = false;
+        // clients_list = [];
+        // admin_ip = [0,0,0,0];
+        // admin_hostname = "unknown";
+        // display_menu();
     // });
     return server;
 }
@@ -202,9 +209,19 @@ function display_menu() {
                 setTimeout(display_menu, showmenu_delay);
                 break;
             case '2':
+                if(!server_connected) {
+                    console.log('Server is not running'.yellow);
+                    setTimeout(display_menu, showmenu_delay);
+                    break;
+                }
                 choice_client_hostname();
                 break;
             case '3':
+                if(!server_connected) {
+                    console.log('Server is not running'.yellow);
+                    setTimeout(display_menu, showmenu_delay);
+                    break;
+                }
                 choice_client_delete();
                 break;
             case '4':

@@ -52,6 +52,15 @@ async function broadcast_message(type, content) {
     }
 }
 
+function generate_ip_address() {
+    // Generate a random ip address and check if it's not already in use
+    let ip = [192,168,1, Math.floor(Math.random() * 247) + 3];
+    while(search_client(null, ip) != -1) {
+        ip = [192,168,1, Math.floor(Math.random() * 247) + 3];
+    }
+    return ip;
+}
+
 wss.on('connection', (ws) => {
     clients_list.push({ip: null, hostname: "unknown", open: false, ws: ws, lastkeepalive: Date.now()}); // add the client to the list
     ws.on('message', async (buffer) => {
@@ -94,11 +103,11 @@ wss.on('connection', (ws) => {
                             await immon.srv_send_message(admin_ip, "ERROR", "Client not found");
                             break;
                         }
-                        clients_list.splice(rm_id, 1);
                         immon.set_ws(clients_list[rm_id].ws);
                         clients_list[rm_id].open = true;
                         await immon.srv_send_message(clients_list[rm_id].ip, "REMOVE", "");
                         clients_list[rm_id].open = false;
+                        clients_list.splice(rm_id, 1);
                         await broadcast_message("CLIENTS_LIST", JSON.stringify(clients_list.map(item => {return {ip: item.ip.join("."), hostname: item.hostname}})));
                         break;
                     case "ALIVE":
@@ -120,7 +129,7 @@ wss.on('connection', (ws) => {
                             await immon.srv_send_message([0,0,0,0], "ERROR", "Server full");
                             break;
                         }
-                        clients_list[client_id].ip = [192,168,1, clients_list.length + 1];
+                        clients_list[client_id].ip = generate_ip_address();
                         clients_list[client_id].hostname = next_client_hostname;
                         await immon.srv_send_message(clients_list[client_id].ip, "SET_IP", clients_list[client_id].ip.join("."));
                         await immon.srv_send_message(clients_list[client_id].ip, "SET_HOSTNAME", clients_list[client_id].hostname);
@@ -163,6 +172,7 @@ wss.on('connection', (ws) => {
 async function broadcast_keepalive() {
     // Send a KEEP_ALIVE message to all clients
     for(let i = 0; i < clients_list.length; i++) {
+        if(clients_list[i].open) continue; // prevent acks drop
         immon.set_ws(clients_list[i].ws);
         clients_list[i].open = true;
         await immon.srv_send_message(clients_list[i].ip, "KEEP_ALIVE", "");
@@ -176,7 +186,7 @@ cron.schedule('*/5 * * * * *', async() => {
         // console.log(clients_list.map(item => {return {hostname: item.hostname, time: item.lastkeepalive, open: item.open}})); DEBUG
         // Check if the clients are still alive
         for(let i = 0; i < clients_list.length; i++) {
-            if(Date.now() - clients_list[i].lastkeepalive > 6000) {
+            if(Date.now() - clients_list[i].lastkeepalive > 15000) {
                 console.log(`Client ${i} disconnected`);
                 if(clients_list[i].ip == admin_ip) {
                     admin_connected = false;

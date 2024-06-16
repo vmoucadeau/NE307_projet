@@ -15,7 +15,7 @@ const frame = require('../utils/frames.js');
 const lz78 = require('../utils/lz78.js');
 const Bufferutils = require('../utils/buffers.js');
 const protocol_code = 1;
-let sleep_time = 10;
+let sleep_time = 15;
 let ws_client = null;
 let received = null;
 

@@ -1,5 +1,6 @@
 const ws = require('ws');
 const immon = require('./protocols/immon.js');
+const lz78 = require('./utils/lz78.js');
 var colors = require('colors');
 const readline = require('readline');
 let client = new ws.WebSocket('ws://localhost:8080/');
@@ -39,6 +40,7 @@ client.on('message', async function(buffer) {
                     break;
                 case "ERROR":
                     console.log(`Error: ${parsed.content}`);
+                    process.exit(1);
                     break;
                 case "CLIENTS_LIST":
                     clients_list = JSON.parse(parsed.content);
@@ -50,7 +52,7 @@ client.on('message', async function(buffer) {
                 case 'KEEP_ALIVE':
                     setTimeout(async function() {
                         await immon.cli_send_message(server_ip, "ALIVE", "");
-                    }, 100);
+                    }, 300);
                     break;
                 case "REMOVE":
                     console.log("You have been removed from the server".red);
@@ -103,9 +105,15 @@ function displayInterface() {
             displayInterface();
             return;
         }
+        if(hostname == client_hostname) {
+            console.log("Due to ecological reasons, you can't send messages to yourself".red);
+            displayInterface();
+            return;
+        }
         await immon.cli_send_message(client.ip.split('.').map(x => parseInt(x)), "MESSAGE", message);
         displayInterface();
     });
 }
 
+console.log(lz78.decode(lz78.to_dic(lz78.to_bin(lz78.encode("&éàùè-('")))));
 displayInterface();
