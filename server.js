@@ -172,7 +172,9 @@ wss.on('connection', (ws) => {
 async function broadcast_keepalive() {
     // Send a KEEP_ALIVE message to all clients
     for(let i = 0; i < clients_list.length; i++) {
-        if(clients_list[i].open) continue; // prevent acks drop
+        if(clients_list[i].open) return; // prevent communication failure
+    }
+    for(let i = 0; i < clients_list.length; i++) {
         immon.set_ws(clients_list[i].ws);
         clients_list[i].open = true;
         await immon.srv_send_message(clients_list[i].ip, "KEEP_ALIVE", "");
