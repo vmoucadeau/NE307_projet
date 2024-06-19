@@ -15,7 +15,7 @@ const frame = require('../utils/frames.js');
 const lz78 = require('../utils/lz78.js');
 const Bufferutils = require('../utils/buffers.js');
 const protocol_code = 1;
-let sleep_time = 15;
+let sleep_time = 10;
 let ws_client = null;
 let received = null;
 
@@ -62,11 +62,11 @@ function generate_frames(data, head) {
 
 
 async function send(frames) {
-    if(ws_client == null) return -1;
+    if(ws_client == null ) return -1;
     for(i = 0; i < frames.length; i++) {
         ws_client.send(frames[i]);
         let actual_delay = 0;
-        while(received == null && actual_delay < sleep_time*1000) {
+        while(received == null && actual_delay < sleep_time*100) {
             await sleep(sleep_time);
             actual_delay += sleep_time;
         }

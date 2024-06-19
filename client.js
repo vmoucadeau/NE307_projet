@@ -115,5 +115,4 @@ function displayInterface() {
     });
 }
 
-console.log(lz78.decode(lz78.to_dic(lz78.to_bin(lz78.encode("&éàùè-('")))));
 displayInterface();

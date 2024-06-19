@@ -11,21 +11,6 @@ function gen_parity(bin) {
   return out;
 }
 
-function check_parity(bin) {
-  let out = '';
-  for(let i = 0; i < bin.length; i+=15) {
-    let byte = bin.slice(i+1, i+15);
-    let parity = 0;
-    for(let j = 0; j < byte.length; j++) {
-      parity ^= parseInt(byte[j]);
-    }
-    if(parity == parseInt(bin[i])) {
-      out += byte;
-    }
-  }
-  return out;
-
-}
 
 function to_bin(lz78) {
   // need to be UTF-8 compliant
